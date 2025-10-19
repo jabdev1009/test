@@ -1,4 +1,4 @@
-package com.ssafy.test.exception;
+package com.ssafy.test.global.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

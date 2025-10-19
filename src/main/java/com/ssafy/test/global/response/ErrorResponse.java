@@ -1,4 +1,4 @@
-package com.ssafy.test.response;
+package com.ssafy.test.global.response;
 
 import lombok.Builder;
 import lombok.Getter;

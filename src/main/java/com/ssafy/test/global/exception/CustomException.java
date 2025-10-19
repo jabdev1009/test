@@ -1,7 +1,6 @@
-package com.ssafy.test.exception;
+package com.ssafy.test.global.exception;
 
 import lombok.Getter;
-import org.springframework.http.HttpStatus;
 
 @Getter
 public class CustomException extends RuntimeException {

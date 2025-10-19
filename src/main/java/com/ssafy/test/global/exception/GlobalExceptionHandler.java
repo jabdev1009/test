@@ -1,6 +1,6 @@
-package com.ssafy.test.exception;
+package com.ssafy.test.global.exception;
 
-import com.ssafy.test.response.ErrorResponse;
+import com.ssafy.test.global.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

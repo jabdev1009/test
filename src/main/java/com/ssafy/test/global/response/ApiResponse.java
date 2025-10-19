@@ -1,4 +1,4 @@
-package com.ssafy.test.response;
+package com.ssafy.test.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
