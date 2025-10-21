@@ -28,7 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
-    implementation("org.redisson:redisson-spring-boot-starter:3.21.4")
+    implementation("org.redisson:redisson-spring-boot-starter:3.31.0")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     testImplementation("io.projectreactor:reactor-test")

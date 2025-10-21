@@ -1,0 +1,23 @@
+redisson:
+  # Redis 서버 연결 방식 (단일 노드)
+  single-server-config:
+    # Redis 서버 주소 (standalone)
+    address: "redis://localhost:6379"  # ⚠️ redis:// 또는 rediss://(SSL용) 접두사 필수
+    #password: "your_password"          # 선택 — 비밀번호가 있는 경우 입력
+    #database: 0                        # 선택 — 사용할 Redis DB index (기본값: 0)
+    connection-minimum-idle-size: 5    # 최소 유휴 연결 수
+    connection-pool-size: 10           # 최대 연결 풀 크기
+    idle-connection-timeout: 10000     # 연결이 유휴 상태일 때의 타임아웃(ms)
+    connect-timeout: 10000             # Redis 연결 시도 타임아웃(ms)
+    timeout: 3000                      # 명령어 실행 타임아웃(ms)
+    retry-attempts: 3                  # 명령 실패 시 재시도 횟수
+    retry-interval: 1500               # 재시도 간격(ms)
+    ping-connection-interval: 30000    # 연결 유효성 검사용 ping 주기(ms)
+  # 클라이언트 공통 설정
+  threads: 8                           # Redisson 내부 네트워크 이벤트 루프 쓰레드 수
+  netty-threads: 16                    # Netty 이벤트 루프 쓰레드 수
+  codec:
+    class: "org.redisson.codec.JsonJacksonCodec"  # 데이터 직렬화/역직렬화 방식
+
+  # (선택) 락 관련 설정
+  lock-watchdog-timeout: 30000         # 락 자동 해제 감시 시간 (기본 30초)
