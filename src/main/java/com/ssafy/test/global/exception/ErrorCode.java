@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
-
+    // 예시
     // 공통 오류
     INVALID_INPUT("E001", "잘못된 입력입니다.", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED("E002", "인증이 필요합니다.", HttpStatus.UNAUTHORIZED),

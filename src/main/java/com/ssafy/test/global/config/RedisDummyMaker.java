@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
-public class RedisHealthChecker {
+public class RedisDummyMaker {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
