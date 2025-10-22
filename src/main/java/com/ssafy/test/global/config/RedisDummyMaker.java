@@ -17,6 +17,12 @@ public class RedisDummyMaker {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    // {world:”worldname”}:l0:x-123:y123:z123
+    private static final String STREAM_PATTERN = "deltaId:{chunk:*}:deltas";
+
+    private static final String GROUP_NAME = "dbwriter";
+
+
     @PostConstruct
     public void checkConnection() {
         try {
