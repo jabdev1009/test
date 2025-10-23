@@ -1,28 +1,27 @@
 package com.ssafy.test.snapshot.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssafy.test.snapshot.dto.DeltaDTO;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.time.Instant;
 
 @Service
+@RequiredArgsConstructor
 public class SnapshotService {
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotService.class);
     private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SnapshotService(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
-
+    private static final String OPID_PATTERN = "op_ids:*";
+    private static final String DELTAS_PREFIX = "deltas:";
+    private static final String TOMBSTONE_PREFIX = "tombstone:";
     /**
      1. 배치 시작 시 timestamp 기준 범위를 정함
      2. Redis에서 op_ids:<chunkId> 범위 조회 → batch에 포함될 op_id 확보
@@ -40,7 +39,8 @@ public class SnapshotService {
         Instant batchStartTime = Instant.now();
         log.info("스냅샷 배치 시작 시간: {}", batchStartTime);
 
-        Set<String> chunkKeys = redisTemplate.keys("op_ids:*");
+        // 2. Redis에서 op_id 패턴 검사로 배치 작업이 필요한 청크 조회
+        Set<String> chunkKeys = redisTemplate.keys(OPID_PATTERN);
         if (chunkKeys == null || chunkKeys.isEmpty()) {
             log.info("처리할 chunk 없음");
             return;
@@ -50,7 +50,8 @@ public class SnapshotService {
         // try-with-resources
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (String chunkKey : chunkKeys) {
-                // batchStartTime을 processChunk로 전달하거나, processChunk 내에서 활용
+                
+                // chunk 별 스냅샷 생성 작업
                 executor.submit(() -> processChunk(chunkKey, batchStartTime));
             }
         }
@@ -64,34 +65,53 @@ public class SnapshotService {
 
             // batchStartTime을 기준으로 score(timestamp)가 작은 op_id 조회
             double maxScore = (double) batchStartTime.toEpochMilli();
-            Set<String> opIds = redisTemplate.opsForZSet()
-                    .rangeByScore(chunkKey, Double.NEGATIVE_INFINITY, maxScore);
+            Set<String> opIds = getOpIds(chunkKey, maxScore);
 
-            if (opIds == null || opIds.isEmpty()) {
-                log.info("조건에 맞는 op_id가 없습니다. chunkKey: {}", chunkKey);
-                return;
-            }
+            // 추가된 voxel 없음
+            if (opIds == null || opIds.isEmpty()) log.info("적용할 작업이 없습니다. chunkKey: {}", chunkKey);
 
-            String hashKey = "deltas:" + chunkKey;
+            // 실제 델타 정보를 조회하기 위한 key
+            String deltaKey = DELTAS_PREFIX + chunkKey;
+
+            // DELTAS에서 hashkey로 조회한 직렬화된 field를 담아둘 Queue?
+            // TODO : 자료형에 대한 고민 필요
+            Map<String, String> curDeltas = new HashMap<>();
             for (String opId : opIds) {
                 log.debug("처리 대상 op_id: {}", opId);
 
                 // Redis Hash에서 field(opId)에 해당하는 직렬화된 JSON 문자열 조회
-                String jsonData = (String) redisTemplate.opsForHash().get(hashKey, opId);
-                if (jsonData == null) {
-                    log.warn("op_id에 해당하는 데이터가 없습니다. hashKey: {}, opId: {}", hashKey, opId);
+                String delta = getDelta(deltaKey, opId);
+                if (delta == null) {
+                    log.warn("op_id에 해당하는 데이터가 없습니다. deltaKey: {}, opId: {}", deltaKey, opId);
                     continue;
                 }
-
-                // JSON 문자열을 Map으로 역직렬화
-                Map<String, Object> data = objectMapper.readValue(jsonData, Map.class);
-                log.debug("역직렬화된 데이터: {}", data);
-                // TODO: 역직렬화된 data 기반 로직 추가
+                curDeltas.put(opId, delta);
             }
 
-            log.info("청크 처리 완료: {}, 처리된 op_id 개수: {}", chunkKey, opIds.size());
+            String tombKey = TOMBSTONE_PREFIX + chunkKey;
+            Set<String> tombstoneOpIds = redisTemplate.opsForZSet().rangeByScore(tombKey,Double.NEGATIVE_INFINITY, maxScore);
+
+            // 현재 청크의 최신버전을 postgres에서 확인
+            // S3에서 현재 청크의 가장 최근 버전의 스냅샷을 조회
+            // 스냅샷 + deltas - tombstone을 opid 기준으로 비교
+            // 최신 delta 정보들을 다시 S3에 적재
+            // Postgres에 메타 데이터 삽입
+
+
+
+
+
         } catch (Exception e) {
             log.error("청크 처리 중 오류 발생: {}", chunkKey, e);
         }
     }
+
+    private Set<String> getOpIds(String chunkKey, Double maxScore) {
+        return redisTemplate.opsForZSet().rangeByScore(chunkKey, Double.NEGATIVE_INFINITY, maxScore);
+    }
+
+    private String getDelta(String hashKey, String opId) {
+        return (String) redisTemplate.opsForHash().get(hashKey, opId);
+    }
+
 }
