@@ -5,11 +5,10 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.ssafy.test.snapshot.dto.DeltaDTO;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
 import java.time.Instant;
 import java.util.Random;
 import java.util.UUID;
@@ -17,10 +16,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Component
-@RequiredArgsConstructor
 public class RedisDummyMaker {
 
-    private final RedisTemplate<String, String> redisTemplate; // DTO 직렬화용
+    private final RedisTemplate<String, String> redisTemplate;
+
+    public RedisDummyMaker(@Qualifier("redisTemplateDelta") RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
     private final Random random = new Random();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -28,11 +31,10 @@ public class RedisDummyMaker {
     public void startProducer() {
         // Redis 연결 확인
         try {
-            String pong = new String(redisTemplate.getConnectionFactory().getConnection().ping());
+            String pong = redisTemplate.getConnectionFactory().getConnection().ping();
             System.out.println("✅ Redis Ping Response: " + pong);
         } catch (Exception e) {
             System.out.println("❌ Redis 연결 실패");
-            e.printStackTrace();
             return;
         }
 
