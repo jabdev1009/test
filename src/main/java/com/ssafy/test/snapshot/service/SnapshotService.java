@@ -2,6 +2,7 @@ package com.ssafy.test.snapshot.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.test.snapshot.dto.DeltaDTO;
+import com.ssafy.test.snapshot.repo.SnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ public class SnapshotService {
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotService.class);
     private final StringRedisTemplate redisTemplate;
+    private final SnapshotRepository repository;
 
     private static final String OPID_PATTERN = "op_ids:*";
     private static final String DELTAS_PREFIX = "deltas:";
@@ -91,7 +93,10 @@ public class SnapshotService {
             String tombKey = TOMBSTONE_PREFIX + chunkKey;
             Set<String> tombstoneOpIds = redisTemplate.opsForZSet().rangeByScore(tombKey,Double.NEGATIVE_INFINITY, maxScore);
 
+
             // 현재 청크의 최신버전을 postgres에서 확인
+//            repository.findLatestChunkIndexUuid()
+
             // S3에서 현재 청크의 가장 최근 버전의 스냅샷을 조회
             // 스냅샷 + deltas - tombstone을 opid 기준으로 비교
             // 최신 delta 정보들을 다시 S3에 적재
