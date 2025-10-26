@@ -1,9 +1,5 @@
 package com.ssafy.test.snapshot.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
-
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.UUID;
 

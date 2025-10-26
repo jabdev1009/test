@@ -17,8 +17,6 @@ java {
     }
 }
 
-
-
 repositories {
     mavenCentral()
 }
@@ -38,6 +36,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1")
 }
 
 
@@ -55,9 +54,7 @@ jooq {
                 generator.apply {
                     name = "org.jooq.codegen.DefaultGenerator"
                     database.apply {
-                        // DDLDatabase 사용 시 설정
                         name = "org.jooq.meta.extensions.ddl.DDLDatabase"
-                        // properties 리스트를 직접 add
                         properties.add(Property().apply {
                             key = "scripts"
                             value = "src/main/resources/db-schema"
@@ -95,7 +92,6 @@ jooq {
     }
 }
 
-// Generated JOOQ 소스 인식
 sourceSets {
     main {
         java {
@@ -111,7 +107,6 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     dependsOn("prepareDbAndJooq")
 }
 
-// Clean 시 생성된 jOOQ 코드도 삭제
 tasks.named("clean") {
     doLast {
         delete("build/generated-src/jooq")
