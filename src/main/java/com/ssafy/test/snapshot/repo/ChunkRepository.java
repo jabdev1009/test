@@ -16,18 +16,12 @@ import static com.example.jooq.generated.Tables.CHUNK_MESH;
 import static com.example.jooq.generated.Tables.WORLD;
 import static com.example.jooq.generated.Tables.WORLD_LOD;
 
-/**
- * JOOQ 기반 청크 Repository
- */
 @Repository
 @RequiredArgsConstructor
 public class ChunkRepository {
 
     private final DSLContext dsl;
 
-    /**
-     * World UUID 조회 (이름으로)
-     */
     public Optional<UUID> findWorldUuidByName(String worldName) {
         return dsl.select(WORLD.UUID)
                 .from(WORLD)
@@ -36,9 +30,6 @@ public class ChunkRepository {
                 .fetchOptional(WORLD.UUID);
     }
 
-    /**
-     * World LOD 정보 조회
-     */
     public Optional<WorldLodInfo> findWorldLodInfo(UUID worldUuid, short lod) {
         return dsl.select(
                         WORLD_LOD.UUID,
@@ -56,9 +47,6 @@ public class ChunkRepository {
                 ));
     }
 
-    /**
-     * Chunk Index 조회
-     */
     public Optional<UUID> findChunkIndexUuid(UUID worldUuid, short lod, int x, int y, int z) {
         return dsl.select(CHUNK_INDEX.UUID)
                 .from(CHUNK_INDEX)
@@ -71,9 +59,6 @@ public class ChunkRepository {
                 .fetchOptional(CHUNK_INDEX.UUID);
     }
 
-    /**
-     * Chunk Index 생성
-     */
     public UUID insertChunkIndex(UUID worldUuid, short lod, int x, int y, int z,
                                  int edgeCells, double voxelSizeM,
                                  double minX, double minY, double minZ,
@@ -105,9 +90,6 @@ public class ChunkRepository {
         return chunkUuid;
     }
 
-    /**
-     * 최신 스냅샷 버전 조회
-     */
     public Optional<Long> findMaxSnapshotVersion(UUID chunkUuid) {
         return dsl.select(CHUNK_SNAPSHOT.VERSION.max())
                 .from(CHUNK_SNAPSHOT)
@@ -116,9 +98,6 @@ public class ChunkRepository {
                 .fetchOptional(0, Long.class);
     }
 
-    /**
-     * 최신 메쉬 버전 조회
-     */
     public Optional<Long> findMaxMeshVersion(UUID chunkUuid) {
         return dsl.select(CHUNK_MESH.MESH_VERSION.max())
                 .from(CHUNK_MESH)
@@ -127,9 +106,6 @@ public class ChunkRepository {
                 .fetchOptional(0, Long.class);
     }
 
-    /**
-     * Chunk Snapshot 저장
-     */
     public UUID insertChunkSnapshot(UUID chunkUuid, long version, String storageUri,
                                     int compressedBytes, int nonEmptyCells) {
         UUID snapshotUuid = UUID.randomUUID();
@@ -141,7 +117,7 @@ public class ChunkRepository {
                 .set(CHUNK_SNAPSHOT.VERSION, version)
                 .set(CHUNK_SNAPSHOT.SCHEMA_VERSION, (short) 1)
                 .set(CHUNK_SNAPSHOT.STORAGE_URI, storageUri)
-                .set(CHUNK_SNAPSHOT.SNAPSHOT_KIND, "sparse-voxel")
+//                .set(CHUNK_SNAPSHOT.SNAPSHOT_KIND, "sparse-voxel")
                 .set(CHUNK_SNAPSHOT.NON_EMPTY_CELLS, nonEmptyCells)
                 .set(CHUNK_SNAPSHOT.COMPRESSED_BYTES, compressedBytes)
                 .set(CHUNK_SNAPSHOT.CREATED_AT, now)
@@ -151,9 +127,6 @@ public class ChunkRepository {
         return snapshotUuid;
     }
 
-    /**
-     * Chunk Mesh 저장
-     */
     public UUID insertChunkMesh(UUID chunkUuid, UUID snapshotUuid, long meshVersion,
                                 String artifactUri, int compressedBytes) {
         UUID meshUuid = UUID.randomUUID();
@@ -165,7 +138,7 @@ public class ChunkRepository {
                 .set(CHUNK_MESH.SNAPSHOT_ID, snapshotUuid)
                 .set(CHUNK_MESH.MESH_VERSION, meshVersion)
                 .set(CHUNK_MESH.ARTIFACT_URI, artifactUri)
-                .set(CHUNK_MESH.ARTIFACT_KIND, "glb")
+//                .set(CHUNK_MESH.ARTIFACT_KIND, "glb")
                 .set(CHUNK_MESH.COMPRESSED_BYTES, compressedBytes)
                 .set(CHUNK_MESH.CREATED_AT, now)
                 .set(CHUNK_MESH.UPDATED_AT, now)
@@ -174,9 +147,6 @@ public class ChunkRepository {
         return meshUuid;
     }
 
-    /**
-     * Chunk Index 업데이트 (스냅샷 생성 후)
-     */
     public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
                                               long version, UUID meshUuid, long meshVersion,
                                               Instant lastWriteAt) {
@@ -194,8 +164,5 @@ public class ChunkRepository {
                 .execute();
     }
 
-    /**
-     * World LOD 정보
-     */
     public record WorldLodInfo(UUID uuid, int edgeCells, double voxelSizeM) {}
 }
