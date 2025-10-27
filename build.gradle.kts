@@ -24,19 +24,29 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
-    jooqGenerator("org.postgresql:postgresql:42.6.0")
-    jooqGenerator("org.jooq:jooq-meta-extensions:3.20.0")
-    testImplementation("io.projectreactor:reactor-test")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")
+    testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // S3
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1")
+
+    // flyway
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
+    // jooq
+    jooqGenerator("org.postgresql:postgresql:42.6.0")
+    jooqGenerator("org.jooq:jooq-meta-extensions:3.20.0")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
+
+    // jgltf
+    implementation("de.javagl:jgltf-model:2.0.3")
+    implementation("de.javagl:jgltf-impl-v2:2.0.3")
 }
 
 
