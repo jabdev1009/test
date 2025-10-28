@@ -14,10 +14,6 @@ import java.util.UUID;
 
 import static com.ssafy.test.global.exception.ErrorCode.INTERNAL_SERVER_ERROR;
 
-/**
- * 청크 메타데이터 관리 서비스
- * Redisson 락으로 청크 처리가 직렬화되므로 추가 락 불필요
- */
 @Service
 @RequiredArgsConstructor
 public class ChunkMetadataService {
@@ -25,9 +21,6 @@ public class ChunkMetadataService {
     private static final Logger log = LoggerFactory.getLogger(ChunkMetadataService.class);
     private final ChunkRepository repository;
 
-    /**
-     * Chunk Index 조회 또는 생성
-     */
     @Transactional
     public UUID getOrCreateChunkIndex(ChunkInfo chunkInfo) {
         UUID worldUuid = repository.findWorldUuidByName(chunkInfo.worldName())
@@ -42,9 +35,6 @@ public class ChunkMetadataService {
         ).orElseGet(() -> createChunkIndexSafely(worldUuid, chunkInfo));
     }
 
-    /**
-     * Chunk Index 안전 생성 (중복 체크)
-     */
     private UUID createChunkIndexSafely(UUID worldUuid, ChunkInfo chunkInfo) {
         try {
             log.info("새로운 청크 인덱스 생성: {}", chunkInfo);
@@ -82,26 +72,16 @@ public class ChunkMetadataService {
         }
     }
 
-    /**
-     * 다음 스냅샷 버전 조회
-     * Redisson 락으로 청크가 보호되므로 안전
-     */
     @Transactional
     public long getNextSnapshotVersion(UUID chunkUuid) {
         return repository.findMaxSnapshotVersion(chunkUuid).orElse(0L) + 1;
     }
 
-    /**
-     * 다음 메쉬 버전 조회
-     */
     @Transactional
     public long getNextMeshVersion(UUID chunkUuid) {
         return repository.findMaxMeshVersion(chunkUuid).orElse(0L) + 1;
     }
 
-    /**
-     * Chunk Snapshot 저장 (버전 충돌 체크)
-     */
     @Transactional
     public UUID saveChunkSnapshot(UUID chunkUuid, long version, String storageUri,
                                   int compressedBytes, int nonEmptyCells, Instant createdAt) {
@@ -119,9 +99,6 @@ public class ChunkMetadataService {
         }
     }
 
-    /**
-     * Chunk Mesh 저장
-     */
     @Transactional
     public UUID saveChunkMesh(UUID chunkUuid, UUID snapshotUuid, long meshVersion,
                               String artifactUri, int compressedBytes, Instant createdAt) {
@@ -139,9 +116,6 @@ public class ChunkMetadataService {
         }
     }
 
-    /**
-     * Chunk Index 업데이트
-     */
     @Transactional
     public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
                                               long version, long meshVersion, Instant lastWriteAt) {

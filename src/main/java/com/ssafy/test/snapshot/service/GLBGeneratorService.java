@@ -12,9 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 
-/**
- * DeltaDTO 리스트를 GLB 파일로 변환하는 서비스
- */
 @Service
 @RequiredArgsConstructor
 public class GLBGeneratorService {

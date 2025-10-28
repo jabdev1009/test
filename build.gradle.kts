@@ -51,6 +51,7 @@ dependencies {
     implementation("de.javagl:jgltf-model:2.0.3")
     implementation("de.javagl:jgltf-impl-v2:2.0.3")
 
+    // minio - test
     implementation("io.minio:minio:8.5.11")
 }
 

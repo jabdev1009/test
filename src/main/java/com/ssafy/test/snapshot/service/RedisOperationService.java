@@ -10,9 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
-/**
- * Redis 작업 처리 서비스
- */
 @Service
 @RequiredArgsConstructor
 public class RedisOperationService {

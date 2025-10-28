@@ -5,9 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/**
- * S3 스토리지 서비스
- */
 @Service
 @RequiredArgsConstructor
 public class S3StorageService {
