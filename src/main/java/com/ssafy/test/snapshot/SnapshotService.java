@@ -1,4 +1,4 @@
-package com.ssafy.test.snapshot.service;
+package com.ssafy.test.snapshot;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.test.snapshot.dto.DeltaDTO;
 import com.ssafy.test.snapshot.repo.ChunkRepository;
+import com.ssafy.test.snapshot.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

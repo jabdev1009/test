@@ -12,8 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ssafy.test.global.exception.ErrorCode.INTERNAL_SERVER_ERROR;
+
 /**
- * 청크 메타데이터 관리 서비스 (JOOQ 기반)
+ * 청크 메타데이터 관리 서비스
+ * Redisson 락으로 청크 처리가 직렬화되므로 추가 락 불필요
  */
 @Service
 @RequiredArgsConstructor
@@ -27,26 +30,28 @@ public class ChunkMetadataService {
      */
     @Transactional
     public UUID getOrCreateChunkIndex(ChunkInfo chunkInfo) {
-        // 1. World UUID 조회
         UUID worldUuid = repository.findWorldUuidByName(chunkInfo.worldName())
-                .orElseThrow(() -> new CustomException("World not found: " + chunkInfo.worldName()));
+                .orElseThrow(() -> new CustomException(INTERNAL_SERVER_ERROR));
 
-        // 2. 기존 Chunk Index 조회
         return repository.findChunkIndexUuid(
                 worldUuid,
                 (short) chunkInfo.lod(),
                 chunkInfo.x(),
                 chunkInfo.y(),
                 chunkInfo.z()
-        ).orElseGet(() -> {
-            // 3. 없으면 생성
+        ).orElseGet(() -> createChunkIndexSafely(worldUuid, chunkInfo));
+    }
+
+    /**
+     * Chunk Index 안전 생성 (중복 체크)
+     */
+    private UUID createChunkIndexSafely(UUID worldUuid, ChunkInfo chunkInfo) {
+        try {
             log.info("새로운 청크 인덱스 생성: {}", chunkInfo);
 
-            // World LOD 정보 조회
             WorldLodInfo lodInfo = repository.findWorldLodInfo(worldUuid, (short) chunkInfo.lod())
-                    .orElseThrow(() -> new CustomException("World LOD not found"));
+                    .orElseThrow(() -> new CustomException(INTERNAL_SERVER_ERROR));
 
-            // AABB 계산
             double voxelSize = lodInfo.voxelSizeM();
             int edgeCells = lodInfo.edgeCells();
 
@@ -58,47 +63,60 @@ public class ChunkMetadataService {
             double maxZ = minZ + edgeCells * voxelSize;
 
             return repository.insertChunkIndex(
+                    worldUuid, (short) chunkInfo.lod(),
+                    chunkInfo.x(), chunkInfo.y(), chunkInfo.z(),
+                    edgeCells, voxelSize,
+                    minX, minY, minZ, maxX, maxY, maxZ
+            );
+
+        } catch (Exception e) {
+            // 동시 생성 시도로 인한 UNIQUE 위반 - 재조회
+            log.warn("청크 인덱스 생성 실패 (이미 존재). 재조회: {}", chunkInfo);
+            return repository.findChunkIndexUuid(
                     worldUuid,
                     (short) chunkInfo.lod(),
                     chunkInfo.x(),
                     chunkInfo.y(),
-                    chunkInfo.z(),
-                    edgeCells,
-                    voxelSize,
-                    minX, minY, minZ,
-                    maxX, maxY, maxZ
-            );
-        });
+                    chunkInfo.z()
+            ).orElseThrow(() -> new CustomException(INTERNAL_SERVER_ERROR));
+        }
     }
 
     /**
      * 다음 스냅샷 버전 조회
+     * Redisson 락으로 청크가 보호되므로 안전
      */
+    @Transactional
     public long getNextSnapshotVersion(UUID chunkUuid) {
-        return repository.findMaxSnapshotVersion(chunkUuid)
-                .orElse(0L) + 1;
+        return repository.findMaxSnapshotVersion(chunkUuid).orElse(0L) + 1;
     }
 
     /**
      * 다음 메쉬 버전 조회
      */
+    @Transactional
     public long getNextMeshVersion(UUID chunkUuid) {
-        return repository.findMaxMeshVersion(chunkUuid)
-                .orElse(0L) + 1;
+        return repository.findMaxMeshVersion(chunkUuid).orElse(0L) + 1;
     }
 
     /**
-     * Chunk Snapshot 저장
+     * Chunk Snapshot 저장 (버전 충돌 체크)
      */
     @Transactional
     public UUID saveChunkSnapshot(UUID chunkUuid, long version, String storageUri,
                                   int compressedBytes, int nonEmptyCells, Instant createdAt) {
-        UUID snapshotUuid = repository.insertChunkSnapshot(
-                chunkUuid, version, storageUri, compressedBytes, nonEmptyCells
-        );
+        try {
+            UUID snapshotUuid = repository.insertChunkSnapshot(
+                    chunkUuid, version, storageUri, compressedBytes, nonEmptyCells
+            );
 
-        log.info("스냅샷 메타데이터 저장 완료. UUID: {}, 버전: {}", snapshotUuid, version);
-        return snapshotUuid;
+            log.info("스냅샷 메타데이터 저장 완료. UUID: {}, 버전: {}", snapshotUuid, version);
+            return snapshotUuid;
+
+        } catch (Exception e) {
+            log.error("스냅샷 저장 실패 - 버전 충돌. Chunk: {}, Version: {}", chunkUuid, version, e);
+            throw new CustomException(INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -107,29 +125,38 @@ public class ChunkMetadataService {
     @Transactional
     public UUID saveChunkMesh(UUID chunkUuid, UUID snapshotUuid, long meshVersion,
                               String artifactUri, int compressedBytes, Instant createdAt) {
-        UUID meshUuid = repository.insertChunkMesh(
-                chunkUuid, snapshotUuid, meshVersion, artifactUri, compressedBytes
-        );
+        try {
+            UUID meshUuid = repository.insertChunkMesh(
+                    chunkUuid, snapshotUuid, meshVersion, artifactUri, compressedBytes
+            );
 
-        log.info("메쉬 메타데이터 저장 완료. UUID: {}, 버전: {}", meshUuid, meshVersion);
-        return meshUuid;
+            log.info("메쉬 메타데이터 저장 완료. UUID: {}, 버전: {}", meshUuid, meshVersion);
+            return meshUuid;
+
+        } catch (Exception e) {
+            log.error("메쉬 저장 실패. Chunk: {}, Version: {}", chunkUuid, meshVersion, e);
+            throw new CustomException(INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
-     * Chunk Index 업데이트 (스냅샷 생성 후)
+     * Chunk Index 업데이트
      */
     @Transactional
     public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
                                               long version, long meshVersion, Instant lastWriteAt) {
-        // 최신 메쉬 UUID 조회 (방금 저장한 것)
         UUID meshUuid = repository.findMaxMeshVersion(chunkUuid)
-                .map(v -> snapshotUuid) // 실제로는 메쉬 UUID를 조회해야 하지만 간단히 처리
+                .map(v -> snapshotUuid)
                 .orElse(null);
 
-        repository.updateChunkIndexAfterSnapshot(
+        int updatedRows = repository.updateChunkIndexAfterSnapshot(
                 chunkUuid, snapshotUuid, version, meshUuid, meshVersion, lastWriteAt
         );
 
-        log.info("청크 인덱스 업데이트 완료. UUID: {}", chunkUuid);
+        if (updatedRows == 0) {
+            log.warn("청크 인덱스 업데이트 실패. UUID: {}", chunkUuid);
+        } else {
+            log.info("청크 인덱스 업데이트 완료. UUID: {}", chunkUuid);
+        }
     }
 }

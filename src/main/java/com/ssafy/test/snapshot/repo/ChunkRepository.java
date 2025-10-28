@@ -1,7 +1,10 @@
 package com.ssafy.test.snapshot.repo;
 
+import com.example.jooq.generated.enums.ArtifactKindEnum;
+import com.example.jooq.generated.enums.SnapshotKindEnum;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -91,7 +94,7 @@ public class ChunkRepository {
     }
 
     public Optional<Long> findMaxSnapshotVersion(UUID chunkUuid) {
-        return dsl.select(CHUNK_SNAPSHOT.VERSION.max())
+        return dsl.select(DSL.max(CHUNK_SNAPSHOT.VERSION))
                 .from(CHUNK_SNAPSHOT)
                 .where(CHUNK_SNAPSHOT.CHUNK_ID.eq(chunkUuid))
                 .and(CHUNK_SNAPSHOT.DELETED_AT.isNull())
@@ -99,7 +102,7 @@ public class ChunkRepository {
     }
 
     public Optional<Long> findMaxMeshVersion(UUID chunkUuid) {
-        return dsl.select(CHUNK_MESH.MESH_VERSION.max())
+        return dsl.select(DSL.max(CHUNK_MESH.MESH_VERSION))
                 .from(CHUNK_MESH)
                 .where(CHUNK_MESH.CHUNK_ID.eq(chunkUuid))
                 .and(CHUNK_MESH.DELETED_AT.isNull())
@@ -117,7 +120,7 @@ public class ChunkRepository {
                 .set(CHUNK_SNAPSHOT.VERSION, version)
                 .set(CHUNK_SNAPSHOT.SCHEMA_VERSION, (short) 1)
                 .set(CHUNK_SNAPSHOT.STORAGE_URI, storageUri)
-//                .set(CHUNK_SNAPSHOT.SNAPSHOT_KIND, "sparse-voxel")
+                .set(CHUNK_SNAPSHOT.SNAPSHOT_KIND, SnapshotKindEnum.sparse_voxel)
                 .set(CHUNK_SNAPSHOT.NON_EMPTY_CELLS, nonEmptyCells)
                 .set(CHUNK_SNAPSHOT.COMPRESSED_BYTES, compressedBytes)
                 .set(CHUNK_SNAPSHOT.CREATED_AT, now)
@@ -138,7 +141,7 @@ public class ChunkRepository {
                 .set(CHUNK_MESH.SNAPSHOT_ID, snapshotUuid)
                 .set(CHUNK_MESH.MESH_VERSION, meshVersion)
                 .set(CHUNK_MESH.ARTIFACT_URI, artifactUri)
-//                .set(CHUNK_MESH.ARTIFACT_KIND, "glb")
+                .set(CHUNK_MESH.ARTIFACT_KIND, ArtifactKindEnum.glb)
                 .set(CHUNK_MESH.COMPRESSED_BYTES, compressedBytes)
                 .set(CHUNK_MESH.CREATED_AT, now)
                 .set(CHUNK_MESH.UPDATED_AT, now)
@@ -147,13 +150,13 @@ public class ChunkRepository {
         return meshUuid;
     }
 
-    public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
-                                              long version, UUID meshUuid, long meshVersion,
-                                              Instant lastWriteAt) {
+    public int updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
+                                             long version, UUID meshUuid, long meshVersion,
+                                             Instant lastWriteAt) {
         OffsetDateTime writeAt = OffsetDateTime.ofInstant(lastWriteAt, ZoneOffset.UTC);
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        dsl.update(CHUNK_INDEX)
+        return dsl.update(CHUNK_INDEX)
                 .set(CHUNK_INDEX.CURRENT_SNAPSHOT_ID, snapshotUuid)
                 .set(CHUNK_INDEX.CURRENT_VERSION, version)
                 .set(CHUNK_INDEX.CURRENT_MESH_ID, meshUuid)

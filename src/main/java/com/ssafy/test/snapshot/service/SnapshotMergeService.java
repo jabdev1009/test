@@ -11,10 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-/**
- * 스냅샷 병합 서비스
- * 기존 스냅샷 + 새 Delta - Tombstone
- */
 @Service
 @RequiredArgsConstructor
 public class SnapshotMergeService {
@@ -24,23 +20,14 @@ public class SnapshotMergeService {
     private final S3StorageService s3Storage;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 스냅샷 병합
-     * 1. 최신 스냅샷 로드
-     * 2. 새 Delta 병합
-     * 3. Tombstone 적용 (삭제)
-     */
     public List<DeltaDTO> mergeSnapshot(ChunkInfo chunkInfo,
                                         Map<UUID, DeltaDTO> currentDeltas,
                                         Set<String> tombstoneOpIds) {
-        // 1. 최신 스냅샷 로드
         Map<UUID, DeltaDTO> mergedMap = loadLatestSnapshot(chunkInfo);
 
-        // 2. 새 Delta 병합
         mergedMap.putAll(currentDeltas);
         log.info("Delta 병합 후 크기: {}", mergedMap.size());
 
-        // 3. Tombstone 적용
         if (tombstoneOpIds != null && !tombstoneOpIds.isEmpty()) {
             tombstoneOpIds.forEach(opId -> {
                 try {
@@ -55,9 +42,6 @@ public class SnapshotMergeService {
         return new ArrayList<>(mergedMap.values());
     }
 
-    /**
-     * 최신 스냅샷 로드 (스트리밍 방식)
-     */
     private Map<UUID, DeltaDTO> loadLatestSnapshot(ChunkInfo chunkInfo) {
         Map<UUID, DeltaDTO> snapMap = new HashMap<>();
 

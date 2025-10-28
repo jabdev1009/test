@@ -13,9 +13,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Redis에서 Delta 데이터 수집 서비스
- */
+import static com.ssafy.test.snapshot.service.SnapshotOrchestrator.OPID_PREFIX;
+
 @Service
 @RequiredArgsConstructor
 public class DeltaCollectorService {
@@ -27,14 +26,8 @@ public class DeltaCollectorService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
-    /**
-     * Delta 수집
-     * 1. op_ids 조회
-     * 2. Delta JSON 조회 및 파싱
-     * 3. Tombstone 조회
-     */
     public DeltaCollectionResult collectDeltas(String chunkKey, double maxScore) {
-        // 1. 처리 대상 op_id 조회
+        // 처리 대상 op_id 조회
         Set<String> opIds = redisTemplate.opsForZSet()
                 .rangeByScore(chunkKey, Double.NEGATIVE_INFINITY, maxScore);
 
@@ -42,14 +35,15 @@ public class DeltaCollectorService {
             return new DeltaCollectionResult(Map.of(), opIds, Set.of());
         }
 
-        // 2. Delta 데이터 조회 및 파싱
-        String deltaKey = DELTAS_PREFIX + chunkKey;
-        Map<UUID, DeltaDTO> currentDeltas = opIds.parallelStream()
+        // Delta 데이터 조회 및 파싱
+        String deltaKey = DELTAS_PREFIX + chunkKey.substring(OPID_PREFIX.length());
+        log.info("deltaKey = {}", deltaKey);
+        Map<UUID, DeltaDTO> currentDeltas = opIds.stream()
                 .map(opId -> fetchAndParseDelta(deltaKey, opId))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(DeltaDTO::opId, Function.identity()));
 
-        // 3. Tombstone 조회
+        // Tombstone 조회
         String tombKey = TOMBSTONE_PREFIX + chunkKey;
         Set<String> tombstoneOpIds = redisTemplate.opsForZSet()
                 .rangeByScore(tombKey, Double.NEGATIVE_INFINITY, maxScore);
@@ -64,12 +58,10 @@ public class DeltaCollectorService {
         return new DeltaCollectionResult(currentDeltas, opIds, tombstoneOpIds);
     }
 
-    /**
-     * Delta 조회 및 파싱
-     */
     private DeltaDTO fetchAndParseDelta(String deltaKey, String opId) {
         try {
             String deltaJson = (String) redisTemplate.opsForHash().get(deltaKey, opId);
+
             if (deltaJson == null) {
                 log.warn("Delta 데이터 없음. opId: {}", opId);
                 return null;
@@ -81,9 +73,6 @@ public class DeltaCollectorService {
         }
     }
 
-    /**
-     * Delta 수집 결과
-     */
     public record DeltaCollectionResult(
             Map<UUID, DeltaDTO> currentDeltas,
             Set<String> opIds,

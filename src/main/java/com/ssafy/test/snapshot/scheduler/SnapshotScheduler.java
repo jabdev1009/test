@@ -17,9 +17,6 @@ class SnapshotScheduler {
     private static final Logger log = LoggerFactory.getLogger(SnapshotScheduler.class);
     private final SnapshotOrchestrator orchestrator;
 
-    /**
-     * 1분마다 스냅샷 배치 실행
-     */
     @Scheduled(fixedRate = 60000)
     public void executeSnapshotBatch() {
         log.info("=== 스냅샷 배치 스케줄 시작 ===");

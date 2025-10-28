@@ -4,6 +4,7 @@ package com.ssafy.test.snapshot.service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +23,10 @@ public class RedisOperationService {
 
     private final StringRedisTemplate redisTemplate;
 
-    /**
-     * 처리 완료된 데이터 정리 (Pipeline 사용)
-     */
     public void cleanupProcessedData(String chunkKey, Set<String> opIds,
                                      Set<String> tombstoneOpIds, double maxScore) {
         try {
-            redisTemplate.execute(connection -> {
+            redisTemplate.execute((RedisCallback<Object>) connection -> {
                 connection.openPipeline();
 
                 if (opIds != null && !opIds.isEmpty()) {

@@ -32,6 +32,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // redisson
+    implementation("org.redisson:redisson-spring-boot-starter:3.24.3")
+
     // S3
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1")
 
@@ -47,6 +50,8 @@ dependencies {
     // jgltf
     implementation("de.javagl:jgltf-model:2.0.3")
     implementation("de.javagl:jgltf-impl-v2:2.0.3")
+
+    implementation("io.minio:minio:8.5.11")
 }
 
 

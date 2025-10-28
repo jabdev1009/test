@@ -16,13 +16,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Component
+@RequiredArgsConstructor
 public class RedisDummyMaker {
 
     private final RedisTemplate<String, String> redisTemplate;
-
-    public RedisDummyMaker(@Qualifier("redisTemplateDelta") RedisTemplate<String, String> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     private final Random random = new Random();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -43,9 +40,9 @@ public class RedisDummyMaker {
             while (true) {
                 try {
                     // 1~5 사이의 랜덤 좌표
-                    int x = random.nextInt(5) + 1;
-                    int y = random.nextInt(5) + 1;
-                    int z = random.nextInt(5) + 1;
+                    int x = random.nextInt(10) + 1;
+                    int y = random.nextInt(10) + 1;
+                    int z = random.nextInt(10) + 1;
 
                     // chunkId 생성
                     String chunkId = "{world:exampleWorld}:l0:x" + x + ":y" + y + ":z" + z;
