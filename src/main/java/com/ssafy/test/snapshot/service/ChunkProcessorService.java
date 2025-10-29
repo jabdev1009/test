@@ -70,21 +70,26 @@ public class ChunkProcessorService {
 
             log.info("수집된 Delta 수: {}", deltaResult.currentDeltas().size());
 
+            // 현재 버전
+            UUID chunkUuid = chunkMetadataService.getOrCreateChunkIndex(chunkInfo);
+            long curVersion = chunkMetadataService.getSnapshotVersion(chunkUuid);
+            long newVersion = curVersion + 1;
+
             List<DeltaDTO> finalSnapshot = snapshotMerger.mergeSnapshot(
                     chunkInfo,
                     deltaResult.currentDeltas(),
-                    deltaResult.tombstoneOpIds()
+                    deltaResult.tombstoneOpIds(),
+                    curVersion
             );
             log.info("최종 스냅샷 Delta 수: {}", finalSnapshot.size());
 
-            UUID chunkUuid = chunkMetadataService.getOrCreateChunkIndex(chunkInfo);
-            long newVersion = chunkMetadataService.getNextSnapshotVersion(chunkUuid);
-
+            // Snapshot 생성, 업로드
             String snapshotJson = objectMapper.writeValueAsString(finalSnapshot);
             String snapshotUrl = s3Storage.uploadSnapshot(chunkInfo, newVersion, snapshotJson);
             log.info("스냅샷 업로드 완료: {}", snapshotUrl);
 
-            byte[] glbData = glbGenerator.generateGLB(finalSnapshot);
+            // GLB 생성, 업로드
+            byte[] glbData = glbGenerator.generateGLB(finalSnapshot, chunkInfo);
             String glbUrl = s3Storage.uploadGLB(chunkInfo, newVersion, glbData);
             log.info("GLB 업로드 완료: {}", glbUrl);
 
@@ -112,7 +117,7 @@ public class ChunkProcessorService {
                     return ChunkProcessResult.success(chunkKey, finalSnapshot.size(), snapshotUrl, glbUrl);
                 }
 
-                log.debug("삭제 락 획득 성공: {}", chunkKey);
+                log.info("삭제 락 획득 성공: {}", chunkKey);
 
                 redisOperation.cleanupProcessedData(
                         chunkKey,

@@ -17,7 +17,7 @@ class SnapshotScheduler {
     private static final Logger log = LoggerFactory.getLogger(SnapshotScheduler.class);
     private final SnapshotOrchestrator orchestrator;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 10000)
     public void executeSnapshotBatch() {
         log.info("=== 스냅샷 배치 스케줄 시작 ===");
         try {

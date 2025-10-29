@@ -22,8 +22,9 @@ public class SnapshotMergeService {
 
     public List<DeltaDTO> mergeSnapshot(ChunkInfo chunkInfo,
                                         Map<UUID, DeltaDTO> currentDeltas,
-                                        Set<String> tombstoneOpIds) {
-        Map<UUID, DeltaDTO> mergedMap = loadLatestSnapshot(chunkInfo);
+                                        Set<String> tombstoneOpIds,
+                                        Long curVersion) {
+        Map<UUID, DeltaDTO> mergedMap = loadLatestSnapshot(chunkInfo, curVersion);
 
         mergedMap.putAll(currentDeltas);
         log.info("Delta 병합 후 크기: {}", mergedMap.size());
@@ -42,32 +43,38 @@ public class SnapshotMergeService {
         return new ArrayList<>(mergedMap.values());
     }
 
-    private Map<UUID, DeltaDTO> loadLatestSnapshot(ChunkInfo chunkInfo) {
+    private Map<UUID, DeltaDTO> loadLatestSnapshot(ChunkInfo chunkInfo, Long curVersion) {
         Map<UUID, DeltaDTO> snapMap = new HashMap<>();
 
-        try {
-            String snapshotJson = s3Storage.getLatestSnapshot(chunkInfo);
+        Optional<String> snapshotOpt = s3Storage.getLatestSnapshot(chunkInfo, curVersion);
 
-            if (snapshotJson == null || snapshotJson.isEmpty() || snapshotJson.equals("[]")) {
-                log.info("기존 스냅샷 없음. 새로 생성. 청크: {}", chunkInfo);
-                return snapMap;
-            }
-
-            try (JsonParser parser = objectMapper.getFactory().createParser(snapshotJson)) {
-                if (parser.nextToken() == JsonToken.START_ARRAY) {
-                    while (parser.nextToken() == JsonToken.START_OBJECT) {
-                        DeltaDTO delta = parser.readValueAs(DeltaDTO.class);
-                        snapMap.put(delta.opId(), delta);
-                    }
-                }
-            }
-
-            log.info("기존 스냅샷 로드 완료. Delta 수: {}", snapMap.size());
-
-        } catch (Exception e) {
-            log.error("스냅샷 로드 실패. 빈 스냅샷으로 시작. 청크: {}", chunkInfo, e);
+        if (snapshotOpt.isEmpty()) {
+            log.info("새 스냅샷 생성 (기존 데이터 없음). 청크: {}", chunkInfo);
+            return snapMap;
         }
 
+        String snapshotJson = snapshotOpt.get();
+
+        // 빈 배열 체크
+        if (snapshotJson.equals("[]")) {
+            log.info("빈 스냅샷 (기존 Delta 없음). 청크: {}", chunkInfo);
+            return snapMap;
+        }
+
+        try (JsonParser parser = objectMapper.getFactory().createParser(snapshotJson)) {
+            if (parser.nextToken() == JsonToken.START_ARRAY) {
+                int count = 0;
+                while (parser.nextToken() == JsonToken.START_OBJECT) {
+                    DeltaDTO delta = parser.readValueAs(DeltaDTO.class);
+                    snapMap.put(delta.opId(), delta);
+                    count++;
+                }
+                log.info("기존 스냅샷 로드 완료. Delta 수: {}. 청크: {}", count, chunkInfo);
+            }
+        } catch (Exception e) {
+            log.error("스냅샷 파싱 실패. 빈 스냅샷으로 시작. 청크: {}", chunkInfo, e);
+            return new HashMap<>();
+        }
         return snapMap;
     }
 }

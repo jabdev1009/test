@@ -3,6 +3,8 @@ package com.ssafy.test.snapshot.service;
 import io.minio.*;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -150,44 +152,21 @@ public class S3Service {
 //        }
 //    }
 
-    public String getLatestChunkFile(String worldName, int lod, int x, int y, int z) {
+    public String getChunkFile(String worldName, int lod, int x, int y, int z, Long version) {
+        String objectName = String.format("%s/l%d/x%d/y%d/z%d/v%d.json",
+                worldName, lod, x, y, z, version);
         try {
-            String prefix = String.format("%s/lod%d/x%d/y%d/z%d/", worldName, lod, x, y, z);
-
-            Iterable<Result<Item>> results = minioClient.listObjects(
-                    ListObjectsArgs.builder()
+            try (InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
                             .bucket(bucketName)
-                            .prefix(prefix)
-                            .recursive(true)
+                            .object(objectName)
                             .build()
-            );
-
-            // 최신 버전 파일 찾기
-            return StreamSupport.stream(results.spliterator(), false)
-                    .map(result -> {
-                        try {
-                            return result.get().objectName();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .max(Comparator.comparingInt(this::extractVersion))
-                    .map(latestKey -> {
-                        try (InputStream stream = minioClient.getObject(
-                                GetObjectArgs.builder()
-                                        .bucket(bucketName)
-                                        .object(latestKey)
-                                        .build()
-                        )) {
-                            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-                        } catch (Exception e) {
-                            throw new RuntimeException("파일 읽기 실패", e);
-                        }
-                    })
-                    .orElseThrow(() -> new RuntimeException("해당 좌표에 파일이 없습니다."));
+            )) {
+                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            }
 
         } catch (Exception e) {
-            throw new RuntimeException("최신 파일 조회 실패", e);
+            throw new RuntimeException("파일 조회 실패: " + objectName, e);
         }
     }
 

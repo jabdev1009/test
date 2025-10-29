@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Set;
 
+import static com.ssafy.test.snapshot.service.SnapshotOrchestrator.OPID_PREFIX;
+
 @Service
 @RequiredArgsConstructor
 public class RedisOperationService {
@@ -33,12 +35,12 @@ public class RedisOperationService {
                 }
 
                 if (opIds != null && !opIds.isEmpty()) {
-                    String deltaKey = DELTAS_PREFIX + chunkKey;
+                    String deltaKey = DELTAS_PREFIX + chunkKey.substring(OPID_PREFIX.length());
                     redisTemplate.opsForHash().delete(deltaKey, opIds.toArray());
                 }
 
                 if (tombstoneOpIds != null && !tombstoneOpIds.isEmpty()) {
-                    String tombKey = TOMBSTONE_PREFIX + chunkKey;
+                    String tombKey = TOMBSTONE_PREFIX + chunkKey.substring(OPID_PREFIX.length());
                     redisTemplate.opsForZSet().removeRangeByScore(
                             tombKey, Double.NEGATIVE_INFINITY, maxScore
                     );

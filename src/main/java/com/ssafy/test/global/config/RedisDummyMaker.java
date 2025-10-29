@@ -37,12 +37,13 @@ public class RedisDummyMaker {
 
 //        // 별도 스레드에서 더미 데이터 주기적으로 넣기
         executor.submit(() -> {
-            while (true) {
+            int cnt = 0;
+            while (cnt < 10) {
                 try {
                     // 1~5 사이의 랜덤 좌표
-                    int x = random.nextInt(10) + 1;
-                    int y = random.nextInt(10) + 1;
-                    int z = random.nextInt(10) + 1;
+                    int x = 0;
+                    int y = 0;
+                    int z = 0;
 
                     // chunkId 생성
                     String chunkId = "{world:exampleWorld}:l0:x" + x + ":y" + y + ":z" + z;
@@ -57,9 +58,9 @@ public class RedisDummyMaker {
                     // DeltaDTO 생성 (Builder 사용)
                     DeltaDTO dto = new DeltaDTO(
                             UUID.randomUUID(),
-                            random.nextInt(999_999),
-                            random.nextInt(64),
-                            DeltaDTO.ColorSchema.RGB1,
+                            random.nextInt(Integer.MAX_VALUE),
+                            63,
+                            DeltaDTO.ColorSchema.RGB_FACES,
                             new byte[]{
                                     (byte) random.nextInt(256),
                                     (byte) random.nextInt(256),
@@ -80,7 +81,7 @@ public class RedisDummyMaker {
                     redisTemplate.opsForHash().put(hashKey, dto.opId().toString(), json);
 
                     System.out.printf("[+] %s 에 더미 데이터 추가 (op_id=%s)%n", chunkId, dto.opId());
-
+                    cnt++;
                     // 1초 대기
                     Thread.sleep(1000);
                 } catch (Exception e) {
