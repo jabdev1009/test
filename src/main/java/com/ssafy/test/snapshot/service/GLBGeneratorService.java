@@ -124,6 +124,11 @@ public class GLBGeneratorService {
         node.setMesh(0);
         gltf.addNodes(node);
 
+        // Meterial 생성
+        Material material = new Material();
+        material.setDoubleSided(true);
+        gltf.addMaterials(material);
+
         // Buffer 생성
         int vertexCount = positions.size() / 3;
         int indexCount = indices.size();
