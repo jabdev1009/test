@@ -29,11 +29,11 @@ public class ChunkProcessorService {
     private final S3StorageService s3Storage;
     private final ChunkMetadataService chunkMetadataService;
     private final RedisOperationService redisOperation;
+    private final RedissonLockService lockService;
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public ChunkProcessResult processChunk(String chunkKey, Instant batchStartTime,
-                                           RedissonLockService lockService) {
+    public ChunkProcessResult processChunk(String chunkKey, Instant batchStartTime) {
         log.info("청크 처리 시작: {}", chunkKey);
 
         try {
@@ -52,7 +52,7 @@ public class ChunkProcessorService {
                     return null;
                 }
 
-                log.debug("읽기 락 획득 성공 (Watchdog 활성화): {}", chunkKey);
+                log.info("읽기 락 획득 성공 (Watchdog 활성화): {}", chunkKey);
 
                 deltaResult = deltaCollector.collectDeltas(chunkKey, maxScore);
 
@@ -89,7 +89,9 @@ public class ChunkProcessorService {
             log.info("스냅샷 업로드 완료: {}", snapshotUrl);
 
             // GLB 생성, 업로드
-            byte[] glbData = glbGenerator.generateGLB(finalSnapshot, chunkInfo);
+//            byte[] glbData = glbGenerator.generateGLB(finalSnapshot, chunkInfo);
+            byte[] glbData = glbGenerator.generateGLBWithSeparateMeshes(finalSnapshot, chunkInfo);
+
             String glbUrl = s3Storage.uploadGLB(chunkInfo, newVersion, glbData);
             log.info("GLB 업로드 완료: {}", glbUrl);
 

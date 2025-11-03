@@ -4,6 +4,7 @@ import com.ssafy.test.snapshot.service.SnapshotOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,12 +13,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@EnableScheduling
 class SnapshotScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(SnapshotScheduler.class);
     private final SnapshotOrchestrator orchestrator;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 60000)
     public void executeSnapshotBatch() {
         log.info("=== 스냅샷 배치 스케줄 시작 ===");
         try {

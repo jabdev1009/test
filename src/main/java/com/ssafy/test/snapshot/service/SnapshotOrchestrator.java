@@ -28,7 +28,6 @@ public class SnapshotOrchestrator {
 
     private final StringRedisTemplate redisTemplate;
     private final ChunkProcessorService chunkProcessor;
-    private final RedissonLockService lockService;
 
     public void executeSnapshotBatch() {
         Instant batchStartTime = Instant.now();
@@ -48,7 +47,7 @@ public class SnapshotOrchestrator {
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             for (String chunkKey : chunkKeys) {
                 CompletableFuture<ChunkProcessResult> future = CompletableFuture.supplyAsync(
-                        () -> chunkProcessor.processChunk(chunkKey, batchStartTime, lockService),
+                        () -> chunkProcessor.processChunk(chunkKey, batchStartTime),
                         executor
                 );
                 futures.add(future);

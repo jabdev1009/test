@@ -38,7 +38,7 @@ public class RedisDummyMaker {
 //        // 별도 스레드에서 더미 데이터 주기적으로 넣기
         executor.submit(() -> {
             int cnt = 0;
-            while (cnt < 10) {
+            while (cnt < 30) {
                 try {
                     // 1~5 사이의 랜덤 좌표
                     int x = 0;

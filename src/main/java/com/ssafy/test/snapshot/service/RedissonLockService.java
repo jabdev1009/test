@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class RedissonLockService {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonLockService.class);
-    private static final String LOCK_PREFIX = "lock:snapshot:";
+    private final String LOCK_PREFIX = "lock:snapshot:";
 
     private final RedissonClient redissonClient;
 

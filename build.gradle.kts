@@ -62,51 +62,51 @@ configurations {
     }
 }
 
-jooq {
-    version.set("3.20.0")
-    configurations {
-        create("main") {
-            jooqConfiguration.apply {
-                generator.apply {
-                    name = "org.jooq.codegen.DefaultGenerator"
-                    database.apply {
-                        name = "org.jooq.meta.extensions.ddl.DDLDatabase"
-                        properties.add(Property().apply {
-                            key = "scripts"
-                            value = "src/main/resources/db-schema"
-                        })
-                        properties.add(Property().apply {
-                            key = "sort"
-                            value = "flyway"
-                        })
-                        properties.add(Property().apply {
-                            key = "unqualifiedSchema"
-                            value = "none"
-                        })
-                        properties.add(Property().apply {
-                            key = "defaultNameCase"
-                            value = "as_is"
-                        })
+    jooq {
+        version.set("3.20.0")
+        configurations {
+            create("main") {
+                jooqConfiguration.apply {
+                    generator.apply {
+                        name = "org.jooq.codegen.DefaultGenerator"
+                        database.apply {
+                            name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                            properties.add(Property().apply {
+                                key = "scripts"
+                                value = "src/main/resources/db-schema"
+                            })
+                            properties.add(Property().apply {
+                                key = "sort"
+                                value = "flyway"
+                            })
+                            properties.add(Property().apply {
+                                key = "unqualifiedSchema"
+                                value = "none"
+                            })
+                            properties.add(Property().apply {
+                                key = "defaultNameCase"
+                                value = "as_is"
+                            })
 
-                    }
-                    generate.apply {
-                        isDeprecated = false
-                        isRecords = true
-                        isImmutablePojos = true
-                        isFluentSetters = true
-                        isJavaTimeTypes = true
-                    }
+                        }
+                        generate.apply {
+                            isDeprecated = false
+                            isRecords = true
+                            isImmutablePojos = true
+                            isFluentSetters = true
+                            isJavaTimeTypes = true
+                        }
 
-                    target.apply {
-                        packageName = "com.example.jooq.generated"
-                        directory = "build/generated-src/jooq"
-                        encoding = "UTF-8"
+                        target.apply {
+                            packageName = "com.example.jooq.generated"
+                            directory = "build/generated-src/jooq"
+                            encoding = "UTF-8"
+                        }
                     }
                 }
             }
         }
     }
-}
 
 sourceSets {
     main {
