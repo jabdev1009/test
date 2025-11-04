@@ -53,6 +53,7 @@ dependencies {
 
     // minio - test
     implementation("io.minio:minio:8.5.11")
+    testImplementation("org.assertj:assertj-core:3.24.2")
 }
 
 
