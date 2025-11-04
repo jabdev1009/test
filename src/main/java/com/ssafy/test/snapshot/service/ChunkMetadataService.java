@@ -73,8 +73,8 @@ public class ChunkMetadataService {
     }
 
     @Transactional
-    public long getSnapshotVersion(UUID chunkUuid) {
-        return repository.findMaxSnapshotVersion(chunkUuid).orElse(0L);
+    public int getSnapshotVersion(UUID chunkUuid) {
+        return repository.findMaxSnapshotVersion(chunkUuid).orElse(0);
     }
 
     @Transactional

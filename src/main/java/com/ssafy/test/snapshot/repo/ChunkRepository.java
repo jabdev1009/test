@@ -93,12 +93,12 @@ public class ChunkRepository {
         return chunkUuid;
     }
 
-    public Optional<Long> findMaxSnapshotVersion(UUID chunkUuid) {
+    public Optional<Integer> findMaxSnapshotVersion(UUID chunkUuid) {
         return dsl.select(DSL.max(CHUNK_SNAPSHOT.VERSION))
                 .from(CHUNK_SNAPSHOT)
                 .where(CHUNK_SNAPSHOT.CHUNK_ID.eq(chunkUuid))
                 .and(CHUNK_SNAPSHOT.DELETED_AT.isNull())
-                .fetchOptional(0, Long.class);
+                .fetchOptional(0, Integer.class);
     }
 
     public Optional<Long> findMaxMeshVersion(UUID chunkUuid) {

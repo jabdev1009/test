@@ -17,24 +17,17 @@ public class S3StorageService {
 
     private final S3Service s3Service;
 
-    public String uploadSnapshot(ChunkInfo chunkInfo, long version, String jsonContent) {
+    public String uploadSnapshot(ChunkInfo chunkInfo, int version, String jsonContent) {
         String key = buildS3Key(SNAPSHOT_PREFIX, chunkInfo, version, "json");
         return s3Service.uploadFile(key, jsonContent);
     }
 
-    public String uploadGLB(ChunkInfo chunkInfo, long version, byte[] glbData) {
+    public String uploadGLB(ChunkInfo chunkInfo, int version, byte[] glbData) {
         String key = buildS3Key(GLB_PREFIX, chunkInfo, version, "glb");
         return s3Service.uploadFile(key, glbData);
     }
 
-//    public String getLatestSnapshot(ChunkInfo chunkInfo) {
-//        return s3Service.getLatestChunkFile(
-//                SNAPSHOT_PREFIX + "/" + chunkInfo.worldName(),
-//                chunkInfo.lod(), chunkInfo.x(), chunkInfo.y(), chunkInfo.z()
-//        );
-//    }
-
-    public Optional<String> getLatestSnapshot(ChunkInfo chunkInfo,  long version) {
+    public Optional<String> getLatestSnapshot(ChunkInfo chunkInfo, int version) {
         try {
             String snapshot = s3Service.getChunkFile(
                     SNAPSHOT_PREFIX + "/" + chunkInfo.worldName(),
@@ -60,10 +53,29 @@ public class S3StorageService {
         }
     }
 
-    private String buildS3Key(String prefix, ChunkInfo info, long version, String ext) {
+    private String buildS3Key(String prefix, ChunkInfo info, int version, String ext) {
         return String.format("%s/%s/l%d/x%d/y%d/z%d/v%d.%s",
                 prefix, info.worldName(), info.lod(),
                 info.x(), info.y(), info.z(), version, ext
         );
     }
+
+
+
+
+
+
+
+
+
+
+//    public String uploadSnapshot(ChunkInfo chunkInfo, int version, String jsonContent) {
+//        String key = buildS3Key(SNAPSHOT_PREFIX, chunkInfo, version, "json");
+//        return s3Service.uploadFile(key, jsonContent);
+//    }
+//
+//    public String uploadGLB(ChunkInfo chunkInfo, int version, byte[] glbData) {
+//        String key = buildS3Key(GLB_PREFIX, chunkInfo, version, "glb");
+//        return s3Service.uploadFile(key, glbData);
+//    }
 }

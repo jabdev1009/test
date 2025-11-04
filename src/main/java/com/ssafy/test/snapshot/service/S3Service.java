@@ -12,12 +12,14 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.stream.StreamSupport;
 
@@ -89,68 +91,16 @@ public class S3Service {
     }
 
     public String getChunkFile(String worldName, int lod, int x, int y, int z, int version) {
-//        String key = String.format("%s/lod%d/x%d/y%d/z%d/v%d.json", worldName, lod, x, y, z, version);
-//
-//        GetObjectRequest getRequest = GetObjectRequest.builder()
-//                .bucket(bucketName)
-//                .key(key)
-//                .build();
-//
-//        return s3Client.getObjectAsBytes(getRequest).asString(StandardCharsets.UTF_8);
-        try {
-            String key = String.format("%s/lod%d/x%d/y%d/z%d/v%d.json", worldName, lod, x, y, z, version);
+        String key = String.format("%s/lod%d/x%d/y%d/z%d/v%d.json", worldName, lod, x, y, z, version);
 
-            try (InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(key)
-                            .build()
-            )) {
-                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            }
+        GetObjectRequest getRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
 
-        } catch (Exception e) {
-            throw new RuntimeException("파일 조회 실패", e);
-        }
+        return s3Client.getObjectAsBytes(getRequest).asString(StandardCharsets.UTF_8);
     }
 
-//    public String getLatestChunkFile(String worldName, int lod, int x, int y, int z) {
-//        String prefix = String.format("%s/lod%d/x%d/y%d/z%d/", worldName, lod, x, y, z);
-//
-//        ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-//                .bucket(bucketName)
-//                .prefix(prefix)
-//                .build();
-//
-//        ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequest);
-//
-//        // 버전 숫자가 가장 큰 파일 찾기
-//        return listResponse.contents().stream()
-//                .map(S3Object::key)
-//                .max((a, b) -> {
-//                    int va = extractVersion(a);
-//                    int vb = extractVersion(b);
-//                    return Integer.compare(va, vb);
-//                })
-//                .map(latestKey -> {
-//                    GetObjectRequest getRequest = GetObjectRequest.builder()
-//                            .bucket(bucketName)
-//                            .key(latestKey)
-//                            .build();
-//                    return s3Client.getObjectAsBytes(getRequest).asString(StandardCharsets.UTF_8);
-//                })
-//                .orElseThrow(() -> new RuntimeException("해당 좌표에 파일이 없습니다."));
-//    }
-//
-//    private int extractVersion(String key) {
-//        try {
-//            // 예: worldname/lod0/x1/y1/z1/v12.json → 12
-//            String fileName = key.substring(key.lastIndexOf('/') + 1); // v12.json
-//            return Integer.parseInt(fileName.replace("v", "").replace(".json", ""));
-//        } catch (Exception e) {
-//            return 0;
-//        }
-//    }
 
     public String getChunkFile(String worldName, int lod, int x, int y, int z, Long version) {
         String objectName = String.format("%s/l%d/x%d/y%d/z%d/v%d.json",
@@ -183,5 +133,42 @@ public class S3Service {
         }
     }
 
-    
+
+
+//    public String uploadFile(String key, String jsonData) {
+//        PutObjectRequest putRequest = PutObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(key)
+//                .contentType("application/json")
+//                .build();
+//
+//        s3Client.putObject(putRequest, RequestBody.fromString(jsonData, StandardCharsets.UTF_8));
+//        return generatePresignedUrl(key);
+//    }
+//
+//    public String uploadFile(String key, byte[] glbData) {
+//        PutObjectRequest putRequest = PutObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(key)
+//                .contentType("model/gltf-binary")
+//                .build();
+//
+//        s3Client.putObject(putRequest, RequestBody.fromBytes(glbData));
+//        return generatePresignedUrl(key);
+//    }
+
+//    private String generatePresignedUrl(String key) {
+//        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(key)
+//                .build();
+//
+//        PresignedGetObjectRequest presigned = presigner.presignGetObject(r ->
+//                r.signatureDuration(Duration.ofMinutes(10))
+//                        .getObjectRequest(getObjectRequest));
+//
+//        return presigned.url().toString();
+//    }
+
+
 }

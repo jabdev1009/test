@@ -72,8 +72,8 @@ public class ChunkProcessorService {
 
             // 현재 버전
             UUID chunkUuid = chunkMetadataService.getOrCreateChunkIndex(chunkInfo);
-            long curVersion = chunkMetadataService.getSnapshotVersion(chunkUuid);
-            long newVersion = curVersion + 1;
+            int curVersion = chunkMetadataService.getSnapshotVersion(chunkUuid);
+            int newVersion = curVersion + 1;
 
             List<DeltaDTO> finalSnapshot = snapshotMerger.mergeSnapshot(
                     chunkInfo,

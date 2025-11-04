@@ -23,7 +23,7 @@ public class SnapshotMergeService {
     public List<DeltaDTO> mergeSnapshot(ChunkInfo chunkInfo,
                                         Map<UUID, DeltaDTO> currentDeltas,
                                         Set<String> tombstoneOpIds,
-                                        Long curVersion) {
+                                        int curVersion) {
         Map<UUID, DeltaDTO> mergedMap = loadLatestSnapshot(chunkInfo, curVersion);
 
         mergedMap.putAll(currentDeltas);
@@ -43,7 +43,7 @@ public class SnapshotMergeService {
         return new ArrayList<>(mergedMap.values());
     }
 
-    private Map<UUID, DeltaDTO> loadLatestSnapshot(ChunkInfo chunkInfo, Long curVersion) {
+    private Map<UUID, DeltaDTO> loadLatestSnapshot(ChunkInfo chunkInfo, int curVersion) {
         Map<UUID, DeltaDTO> snapMap = new HashMap<>();
 
         Optional<String> snapshotOpt = s3Storage.getLatestSnapshot(chunkInfo, curVersion);
