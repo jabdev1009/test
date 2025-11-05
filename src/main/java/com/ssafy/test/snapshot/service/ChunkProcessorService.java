@@ -94,6 +94,7 @@ public class ChunkProcessorService {
 
             String glbUrl = s3Storage.uploadGLB(chunkInfo, newVersion, glbData);
             log.info("GLB 업로드 완료: {}", glbUrl);
+            //git commit -m "feat(snapshot): 전체 DeltaDTO를 GLB 형식으로 변환하는 기능 구현 [S13P31A207-89]"
 
             UUID snapshotUuid = chunkMetadataService.saveChunkSnapshot(
                     chunkUuid, newVersion, snapshotUrl, snapshotJson.length(),
