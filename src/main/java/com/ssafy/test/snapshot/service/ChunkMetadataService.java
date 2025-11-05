@@ -117,12 +117,8 @@ public class ChunkMetadataService {
     }
 
     @Transactional
-    public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid,
+    public void updateChunkIndexAfterSnapshot(UUID chunkUuid, UUID snapshotUuid, UUID meshUuid,
                                               long version, long meshVersion, Instant lastWriteAt) {
-        UUID meshUuid = repository.findMaxMeshVersion(chunkUuid)
-                .map(v -> snapshotUuid)
-                .orElse(null);
-
         int updatedRows = repository.updateChunkIndexAfterSnapshot(
                 chunkUuid, snapshotUuid, version, meshUuid, meshVersion, lastWriteAt
         );

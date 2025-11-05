@@ -102,13 +102,13 @@ public class ChunkProcessorService {
             );
 
             long meshVersion = chunkMetadataService.getNextMeshVersion(chunkUuid);
-            chunkMetadataService.saveChunkMesh(
+            UUID meshUuid = chunkMetadataService.saveChunkMesh(
                     chunkUuid, snapshotUuid, meshVersion, glbUrl,
                     glbData.length, Instant.now()
             );
 
             chunkMetadataService.updateChunkIndexAfterSnapshot(
-                    chunkUuid, snapshotUuid, newVersion, meshVersion, Instant.now()
+                    chunkUuid, snapshotUuid, meshUuid, newVersion, meshVersion, Instant.now()
             );
 
             RLock deleteLock = lockService.getLock(chunkKey + ":delete");
