@@ -41,9 +41,9 @@ public class GLBGeneratorService {
 
         for (DeltaDTO delta : deltas) {
             // VoxelID 디코딩
-            int localX = delta.voxelId() & 0xFF;
+            int localZ = delta.voxelId() & 0xFF;
             int localY = (delta.voxelId() >> 8) & 0xFF;
-            int localZ = (delta.voxelId() >> 16) & 0xFF;
+            int localX = (delta.voxelId() >> 16) & 0xFF;
 
             // 월드 좌표 계산
             float worldX = chunkBaseX + localX * VOXEL_SIZE;
