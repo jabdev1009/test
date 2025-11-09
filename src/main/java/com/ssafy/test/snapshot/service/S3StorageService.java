@@ -28,6 +28,7 @@ public class S3StorageService {
     }
 
     public Optional<String> getLatestSnapshot(ChunkInfo chunkInfo, int version) {
+        log.info("조회하는 버전: {}", version);
         try {
             String snapshot = s3Service.getChunkFile(
                     SNAPSHOT_PREFIX + "/" + chunkInfo.worldName(),

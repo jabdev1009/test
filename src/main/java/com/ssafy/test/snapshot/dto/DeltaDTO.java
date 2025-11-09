@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record DeltaDTO(
         UUID opId,
+        int vSeq,
         int voxelId,
         int faceMask,
         ColorSchema colorSchema,

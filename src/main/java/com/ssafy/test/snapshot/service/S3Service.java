@@ -3,6 +3,7 @@ package com.ssafy.test.snapshot.service;
 import io.minio.*;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 public class S3Service {
 
+    private static final Logger log = LoggerFactory.getLogger(S3Service.class);
     private final S3Client s3Client;
     private final MinioClient minioClient;
 
@@ -91,14 +93,28 @@ public class S3Service {
     }
 
     public String getChunkFile(String worldName, int lod, int x, int y, int z, int version) {
-        String key = String.format("%s/lod%d/x%d/y%d/z%d/v%d.json", worldName, lod, x, y, z, version);
+        String key = String.format("%s/l%d/x%d/y%d/z%d/v%d.json", worldName, lod, x, y, z, version);
+        log.info("조회 시도 key: {}", key);
+        try {
+            InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(key)
+                            .build());
+                String result = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                log.info("파일 조회 성공: {}", result);
+                return result;
 
-        GetObjectRequest getRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-
-        return s3Client.getObjectAsBytes(getRequest).asString(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.info("파일 조회 실패!!!!!!!!!!!");
+            throw new RuntimeException("파일 조회 실패: " + key, e);
+        }
+//        GetObjectRequest getRequest = GetObjectRequest.builder()
+//                .bucket(bucketName)
+//                .key(key)
+//                .build();
+//
+//        return s3Client.getObjectAsBytes(getRequest).asString(StandardCharsets.UTF_8);
     }
 
 

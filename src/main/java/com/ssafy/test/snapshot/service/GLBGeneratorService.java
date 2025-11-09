@@ -246,11 +246,6 @@ public class GLBGeneratorService {
 
 
     public byte[] generateGLBWithSeparateMeshes(List<DeltaDTO> deltas, ChunkInfo chunkInfo) {
-        float chunkBaseX = chunkInfo.x() * 256.0f;
-        float chunkBaseY = chunkInfo.y() * 256.0f;
-        float chunkBaseZ = chunkInfo.z() * 256.0f;
-
-        // glTF 기본 구조 생성
         GlTF gltf = new GlTF();
         gltf.setAsset(createAsset());
 
@@ -258,7 +253,6 @@ public class GLBGeneratorService {
         gltf.addScenes(scene);
         gltf.setScene(0);
 
-        // 모든 voxel의 바이너리 데이터를 담을 리스트
         List<ByteBuffer> allBuffers = new ArrayList<>();
 
         int nodeIndex = 0;
@@ -266,36 +260,45 @@ public class GLBGeneratorService {
         int accessorIndex = 0;
         int bufferViewIndex = 0;
 
-        // 각 voxel마다 개별 처리
+        // ✅ 보셀 크기 고정 (한 변의 길이 = 1)
+        final float VOXEL_SIZE = 1.0f;
+
         for (DeltaDTO delta : deltas) {
             // 1. VoxelID 디코딩
-            int localX = delta.voxelId() & 0xFF;
+
+            int localX = (delta.voxelId() >> 16) & 0xFF;
             int localY = (delta.voxelId() >> 8) & 0xFF;
-            int localZ = (delta.voxelId() >> 16) & 0xFF;
+            int localZ = delta.voxelId() & 0xFF;
 
-            // 2. 월드 좌표 계산
-            float worldX = chunkBaseX + localX * VOXEL_SIZE;
-            float worldY = chunkBaseY + localY * VOXEL_SIZE;
-            float worldZ = chunkBaseZ + localZ * VOXEL_SIZE;
+            // ✅ 2. 월드 좌표 계산 → 내부 인덱스 기반 상대좌표로 변경
+            // float worldX = chunkBaseX + localX * VOXEL_SIZE;
+            // float worldY = chunkBaseY + localY * VOXEL_SIZE;
+            // float worldZ = chunkBaseZ + localZ * VOXEL_SIZE;
+            //
+            // 이제 단순히 인덱스만 사용 (chunk 내 상대 위치)
+            float baseX = localX * VOXEL_SIZE;
+            float baseY = localY * VOXEL_SIZE;
+            float baseZ = localZ * VOXEL_SIZE;
 
-            // 3. 색상 정규화
+            // 색상 정규화
             float r = (delta.colorBytes()[0] & 0xFF) / 255.0f;
             float g = (delta.colorBytes()[1] & 0xFF) / 255.0f;
             float b = (delta.colorBytes()[2] & 0xFF) / 255.0f;
 
-            // 4. 이 voxel의 정점 생성 (8개)
+            // ✅ 3. 정점 생성 (상대좌표)
             List<Float> positions = new ArrayList<>();
             List<Float> colors = new ArrayList<>();
 
+            // 한 변이 1인 정육면체
             float[][] cubeVertices = {
-                    {worldX, worldY, worldZ},
-                    {worldX + VOXEL_SIZE, worldY, worldZ},
-                    {worldX + VOXEL_SIZE, worldY + VOXEL_SIZE, worldZ},
-                    {worldX, worldY + VOXEL_SIZE, worldZ},
-                    {worldX, worldY, worldZ + VOXEL_SIZE},
-                    {worldX + VOXEL_SIZE, worldY, worldZ + VOXEL_SIZE},
-                    {worldX + VOXEL_SIZE, worldY + VOXEL_SIZE, worldZ + VOXEL_SIZE},
-                    {worldX, worldY + VOXEL_SIZE, worldZ + VOXEL_SIZE}
+                    {baseX, baseY, baseZ},
+                    {baseX + VOXEL_SIZE, baseY, baseZ},
+                    {baseX + VOXEL_SIZE, baseY + VOXEL_SIZE, baseZ},
+                    {baseX, baseY + VOXEL_SIZE, baseZ},
+                    {baseX, baseY, baseZ + VOXEL_SIZE},
+                    {baseX + VOXEL_SIZE, baseY, baseZ + VOXEL_SIZE},
+                    {baseX + VOXEL_SIZE, baseY + VOXEL_SIZE, baseZ + VOXEL_SIZE},
+                    {baseX, baseY + VOXEL_SIZE, baseZ + VOXEL_SIZE}
             };
 
             for (float[] vertex : cubeVertices) {
@@ -307,15 +310,15 @@ public class GLBGeneratorService {
                 colors.add(b);
             }
 
-            // 5. 이 voxel의 인덱스 생성 (36개, offset=0부터 시작)
+            // 인덱스 동일
             List<Integer> indices = new ArrayList<>();
             int[][] cubeFaces = {
                     {0, 1, 2, 2, 3, 0}, // Front
-                    {5, 4, 7, 7, 6, 5}, // Back (수정)
-                    {0, 4, 5, 5, 1, 0}, // Bottom (수정)
+                    {5, 4, 7, 7, 6, 5}, // Back
+                    {0, 4, 5, 5, 1, 0}, // Bottom
                     {3, 2, 6, 6, 7, 3}, // Top
-                    {4, 0, 3, 3, 7, 4}, // Left (수정)
-                    {1, 5, 6, 6, 2, 1}  // Right (수정)
+                    {4, 0, 3, 3, 7, 4}, // Left
+                    {1, 5, 6, 6, 2, 1}  // Right
             };
 
             for (int[] face : cubeFaces) {
@@ -324,7 +327,7 @@ public class GLBGeneratorService {
                 }
             }
 
-            // 6. 바이너리 버퍼 생성
+            // 나머지는 동일 (버퍼 생성, bufferView, accessor, mesh, node 등)
             ByteBuffer positionsBuffer = createFloatBuffer(positions);
             ByteBuffer colorsBuffer = createFloatBuffer(colors);
             ByteBuffer indicesBuffer = createIntBuffer(indices);
@@ -343,29 +346,27 @@ public class GLBGeneratorService {
 
             allBuffers.add(combinedBuffer);
 
-            // 7. BufferViews 정의 (임시로 offset=0으로 설정, 나중에 수정)
             BufferView positionsBufferView = new BufferView();
-            positionsBufferView.setBuffer(0); // 처음부터 buffer[0] 참조
-            positionsBufferView.setByteOffset(0); // 나중에 수정됨
+            positionsBufferView.setBuffer(0);
+            positionsBufferView.setByteOffset(0);
             positionsBufferView.setByteLength(positionsBytes);
             positionsBufferView.setTarget(34962);
             gltf.addBufferViews(positionsBufferView);
 
             BufferView colorsBufferView = new BufferView();
             colorsBufferView.setBuffer(0);
-            colorsBufferView.setByteOffset(positionsBytes); // 나중에 수정됨
+            colorsBufferView.setByteOffset(positionsBytes);
             colorsBufferView.setByteLength(colorsBytes);
             colorsBufferView.setTarget(34962);
             gltf.addBufferViews(colorsBufferView);
 
             BufferView indicesBufferView = new BufferView();
             indicesBufferView.setBuffer(0);
-            indicesBufferView.setByteOffset(positionsBytes + colorsBytes); // 나중에 수정됨
+            indicesBufferView.setByteOffset(positionsBytes + colorsBytes);
             indicesBufferView.setByteLength(indicesBytes);
             indicesBufferView.setTarget(34963);
             gltf.addBufferViews(indicesBufferView);
 
-            // 8. Accessors 정의
             Accessor positionsAccessor = new Accessor();
             positionsAccessor.setBufferView(bufferViewIndex);
             positionsAccessor.setComponentType(5126);
@@ -387,93 +388,73 @@ public class GLBGeneratorService {
             indicesAccessor.setType("SCALAR");
             gltf.addAccessors(indicesAccessor);
 
-            // 9. Mesh와 Primitive 생성
             MeshPrimitive primitive = new MeshPrimitive();
             primitive.setIndices(accessorIndex + 2);
             primitive.addAttributes("POSITION", accessorIndex);
             primitive.addAttributes("COLOR_0", accessorIndex + 1);
 
+            // ✅ [추가] 양면 렌더링 가능한 재질(Material) 설정
+            Material material = new Material();
+            material.setDoubleSided(true);
+            gltf.addMaterials(material);
+            primitive.setMaterial(gltf.getMaterials().size() - 1); // 마지막 material 인덱스 사용
+
             Mesh mesh = new Mesh();
             mesh.setName("voxel_" + delta.opId().toString());
             mesh.addPrimitives(primitive);
-
-            // 메타데이터를 extras에 저장
-            Map<String, Object> extras = new LinkedHashMap<>();
-            extras.put("opId", delta.opId().toString());
-            extras.put("voxelId", delta.voxelId());
-            extras.put("faceMask", delta.faceMask());
-            extras.put("actor", delta.actor());
-            extras.put("policyTags", delta.policyTags());
-            extras.put("timestamp", delta.timestamp().toString());
-            mesh.setExtras(extras);
-
             gltf.addMeshes(mesh);
 
-            // 10. Node 생성
             Node node = new Node();
             node.setMesh(meshIndex);
             node.setName("node_voxel_" + delta.opId().toString());
             gltf.addNodes(node);
 
-            // 11. Scene에 node 추가
             scene.addNodes(nodeIndex);
 
-            // 인덱스 증가
             nodeIndex++;
             meshIndex++;
             accessorIndex += 3;
             bufferViewIndex += 3;
         }
 
-        // 12. 모든 버퍼를 하나의 큰 버퍼로 합치기
+        // ✅ 이후 buffer 병합, GLB 변환 과정은 동일
         int totalBufferSize = allBuffers.stream().mapToInt(ByteBuffer::capacity).sum();
         ByteBuffer combinedAllBuffers = ByteBuffer.allocate(totalBufferSize);
         combinedAllBuffers.order(ByteOrder.LITTLE_ENDIAN);
 
-// 각 voxel의 버퍼를 순차적으로 추가하고 offset 업데이트
         int currentOffset = 0;
         for (int i = 0; i < allBuffers.size(); i++) {
             ByteBuffer voxelBuffer = allBuffers.get(i);
             voxelBuffer.rewind();
             combinedAllBuffers.put(voxelBuffer);
 
-            // BufferView의 offset을 전역 offset으로 업데이트
             int bufferViewStartIndex = i * 3;
             for (int j = 0; j < 3; j++) {
                 BufferView bv = gltf.getBufferViews().get(bufferViewStartIndex + j);
                 int originalOffset = bv.getByteOffset();
                 bv.setByteOffset(currentOffset + originalOffset);
             }
-
             currentOffset += voxelBuffer.capacity();
         }
         combinedAllBuffers.flip();
 
-// 13. 모든 기존 Buffer를 단일 Buffer로 교체
         Buffer singleBuffer = new Buffer();
         singleBuffer.setByteLength(totalBufferSize);
+        gltf.setBuffers(List.of(singleBuffer));
 
-// 새로운 리스트를 만들어 단일 buffer만 포함
-        List<Buffer> newBuffers = new ArrayList<>();
-        newBuffers.add(singleBuffer);
-        gltf.setBuffers(newBuffers);
-
-// 14. GltfAssetV2 생성
         GltfAssetV2 gltfAsset = new GltfAssetV2(gltf, combinedAllBuffers);
-
-// 15. GLB 출력
         GltfModel gltfModel = GltfModels.create(gltfAsset);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GltfModelWriter writer = new GltfModelWriter();
         try {
-            writer.writeBinary(gltfModel, outputStream);
+            new GltfModelWriter().writeBinary(gltfModel, outputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return outputStream.toByteArray();
     }
+
 
 
 }

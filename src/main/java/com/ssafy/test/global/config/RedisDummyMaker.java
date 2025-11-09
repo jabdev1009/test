@@ -58,7 +58,8 @@ public class RedisDummyMaker {
                     // DeltaDTO 생성 (Builder 사용)
                     DeltaDTO dto = new DeltaDTO(
                             UUID.randomUUID(),
-                            random.nextInt(Integer.MAX_VALUE),
+                            cnt,
+                           cnt,
                             63,
                             DeltaDTO.ColorSchema.RGB_FACES,
                             new byte[]{
