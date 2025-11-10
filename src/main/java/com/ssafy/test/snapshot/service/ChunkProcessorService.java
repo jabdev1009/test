@@ -90,7 +90,7 @@ public class ChunkProcessorService {
 
             // GLB 생성, 업로드
 //            byte[] glbData = glbGenerator.generateGLB(finalSnapshot, chunkInfo);
-            byte[] glbData = glbGenerator.generateGLBWithSeparateMeshes(finalSnapshot, chunkInfo);
+            byte[] glbData = glbGenerator.generateGLBWithSeparateMeshes(finalSnapshot);
 
             String glbUrl = s3Storage.uploadGLB(chunkInfo, newVersion, glbData);
             log.info("GLB 업로드 완료: {}", glbUrl);
